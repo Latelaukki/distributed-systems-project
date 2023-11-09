@@ -45,14 +45,14 @@ A Survey
 ### 8.1. Fault Tolerance
 ### 8.2. Persistence
 
-## 9. CHEATING
+## 9. CHEATING (No need to read this)
 ### 9.1. Definition
 ### 9.2. Cheating Categories
 ### 9.3. Cheating Prevention
 ### 9.4. Cheating Detection
 ### 9.5. Reputation Systems and Penalization
 
-## 10. COMMERCIAL ADOPTION
+## 10. COMMERCIAL ADOPTION (No need to read this)
 ### 10.1. Middlewares
 ### 10.2. Industry Solutions
 ### 10.3. Industry Models
