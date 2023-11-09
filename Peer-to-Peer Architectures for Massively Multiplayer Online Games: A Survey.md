@@ -1,4 +1,4 @@
-# Peer-to-Peer Architectures for Massively Multiplayer Online Games: A Survey
+# Peer-to-Peer Architectures for Massively Multiplayer Online Games - A Survey
 
 ## 1. INTRODUCTION
 
