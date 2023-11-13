@@ -19,7 +19,7 @@ In attribute-based naming, entities are described with attributes. Attributes mi
 
 # Node discovery techniques
 
-Gossip and broadcast. In gossiping, node asks for all other nodes for their local information. In broadcasting, one node shares its information to all other nodes.
+Gossip and broadcast. In gossiping, node asks for all other nodes for their local information. In broadcasting, one node shares its information with all other nodes.
 
 # Implementation within an example project if we can find open-source code?
 
