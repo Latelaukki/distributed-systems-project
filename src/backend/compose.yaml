@@ -1,0 +1,19 @@
+services:
+
+  fast-api-server:
+    build: 
+      context: .
+      dockerfile: fast-api.Dockerfile
+    volumes:
+      - ./:/src
+    ports:
+      - '81-83:80'
+    deploy:
+      replicas: 3
+    
+  rabbitMQ:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitMQ
+    ports:
+    - 5672:5672
+    - 15672:15672   #rabbitmq management ui
