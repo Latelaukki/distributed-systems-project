@@ -1,5 +1,8 @@
 from typing import Union
 from fastapi import FastAPI, Request
+import uuid
+
+SERVER_ID = uuid.uuid4()
 
 app = FastAPI()
 
@@ -9,7 +12,7 @@ def read_root():
 
 @app.get("/get-maze")
 def main():
-    return {"Returned maze |---|--|----|"}
+    return {f"Returned maze |---|--|----| from {SERVER_ID}"}
 
 @app.get('/get-server')
 def main(request: Request):
