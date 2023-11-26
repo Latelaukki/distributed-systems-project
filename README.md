@@ -35,7 +35,7 @@ At the moment the project is as follows
 
 When a player clicks a button to enter, for example, maze 1, a request is passed via the reverse proxy to one of the servers. The server then publishes the request to the message broker from which it is passed onto all of the servers (itself also?). 
 
-The servers all subscribe to the same message topic. Then they receive a message they store it to a local sqlite-database. You can see a list of stored messages of a (random) server from [http://localhost:7800/messages](http://localhost:7800/messages).
+The servers all subscribe to the same message topic. When they receive a message they store it to a local sqlite-database. You can see a list of stored messages of a (random) server from [http://localhost:7800/messages](http://localhost:7800/messages).
 
 
 ## Notes
