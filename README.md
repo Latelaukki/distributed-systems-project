@@ -37,6 +37,10 @@ When a player clicks a button to enter, for example, maze 1, a request is passed
 
 The servers all subscribe to the same message topic. When they receive a message they store it to a local sqlite-database. You can see a list of stored messages of a (random) server from [http://localhost:7800/messages](http://localhost:7800/messages).
 
+For example this shows thatserver with ID *89f709..* has stored two messages. One originating from itself and one from *5042898c ..*. Each server is assigned an uuid when started.
+
+ ![messages-example](/documentation/messages-example.png)
+
 
 ## Notes
 
