@@ -11,63 +11,36 @@ python3 main.py
 ```
 Responses is printed in the terminal.
 
+The frontend displays the number of the maze in which the player is atm.
+
 ## Backend
 - Uses Python FastApi and Uvicorn to create servers
 - Uses RabbitMQ for message queues
 - Docker for running the services
 
-How to run with Docker:
+How to run with Docker. Use with `--build` flag if you're running the app for the first time.
 
-Navigate to [src/backend](/src/backend) folder and use Docker compose to start services:
-```
-cd /src/backend
-sudo docker compose up --build
-```
+1. Start by setting up the message-broker in one terminal with `cd rabbitmq && docker compose up`.
+2. When rabbitmq is up, open another terminal and do `cd gameserver && docker compose up`. This will start three fast-api's and a nginx-reverse proxy.
 
-Ports to access the services through web broswer can be found in the compose.yaml file PORTS variable, e.g:
-``` 
-  fast-api-server:
-    build: 
-      context: .
-      dockerfile: fast-api.Dockerfile
-    volumes:
-      - ./:/src
-    ports:
-      - '81-83:80'
-    deploy:
-      replicas: 3
-```
-Servers can be accessed through web browser e.g http://localhost:81/
+Then you access the api in [http://localhost:7800](http://localhost:7800)
 
-### RabbitMQ:
-[src/backend/rabbitmq](src/backend/rabbitmq) folder contains a basic template for using RabbitMQ. 
-
-Currently the RabbitMQ container does not communicate with the servers or the frontend.
-
-RabbitMQ management service UI is accessable through http://localhost:15672/ with credentials:
-
-```
-username: guest
-```
-```
-password: guest 
-```
-
-Messages can be send and received with by running send.py and receive.py files in [src/backend/rabbitmq](src/backend/rabbitmq)
+## Architecture atm
 
 
-Sending and receiving needs the Pika package, install it with python virtual environment enabled:
+At the moment the project is as follows
 
-```
-pip install pika
-```
-```
-python3 send.py
-```
-After running send.py, queues can be monitored through the RabbitMQ management service on http://localhost:15672
+ ![Architecture](/documentation/architecture.png)
 
-To consume messages from RabbitMQ run:
-```
-python3 receive.py
-```
-Message from the queue will be printed in the terminal
+
+When a player clicks a button to enter, for example, maze 1, a request is passed via the reverse proxy to one of the servers. The server then publishes the request to the message broker from which it is passed onto all of the servers (itself also?). 
+
+The servers all subscribe to the same message topic. Then they receive a message they store it to a local sqlite-database. You can see a list of stored messages of a (random) server from [http://localhost:7800/messages](http://localhost:7800/messages).
+
+
+## Notes
+
+- `gameserver/services/publish.py` and `gameserver/services/subscribe.py` are pretty much copied from: [RabbitMQ Publish/Subscribe](https://www.rabbitmq.com/tutorials/tutorial-three-python.html) 
+
+- nginx acts as a load balancer. Each request to port 7800 is passed one of the three gameservers (dont which one up ahead). It does not know anything about the contents of the requests.
+- All messages are posted under the same topic (the pub/sub functions should accept the topic as a parameter)
