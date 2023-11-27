@@ -56,10 +56,10 @@ def read_root():
    return Response(content=html, media_type="text/html")
 
 
-@app.get("/get-maze/{maze_id}")
-def main(maze_id: int):
+@app.get("/get-maze/{maze_id}/{player_id}")
+def get_maze(maze_id: str, player_id: str):
 
-   message = f"Someone requested maze {maze_id} from {SERVER_ID}"
+   message = f"Player {player_id} requested maze {maze_id} from {SERVER_ID}"
    
    # Make another thread for publishing the message to rabbitmq
    publishThread = Thread(target=publish, args=[message])

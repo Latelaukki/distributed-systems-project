@@ -6,7 +6,7 @@ services:
       dockerfile: fast-api.Dockerfile
     volumes:
       - ./:/src    
-    expose:
+    ports:
        - "7777-7779:80"
     deploy:
       replicas: 3
