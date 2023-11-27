@@ -1,36 +1,22 @@
-import os
-import time
 import pika
-import sys
-from services.database import store_message
 
-def subscribe(SERVER_ID, DB_PATH):
+def subscribe(exchange, callback):
 
     print("Starting subscribing")
     connection = pika.BlockingConnection(
     pika.ConnectionParameters(host='rabbitMQ'))
     channel = connection.channel()
 
-    channel.exchange_declare(exchange='ds_messages', exchange_type='fanout')
+    channel.exchange_declare(exchange=exchange, exchange_type='fanout')
 
+    # Luo väliaikaisen jonon, joka elää vain kuuntelun ajan (exclusive=True)
     result = channel.queue_declare('', exclusive=True)
     queue_name = result.method.queue
 
-    binding_keys = ["messages"]
-
-    for binding_key in binding_keys:
-        channel.queue_bind(
-            exchange='ds_messages', queue=queue_name, routing_key=binding_key)
+    # Liitetään jono "vaihteeseen"
+    channel.queue_bind(exchange=exchange, queue=queue_name)
 
     print(' [*] Waiting for logs. To exit press CTRL+C')
-
-
-
-
-    def callback(ch, method, properties, body):
-       
-        store_message({ "msg": f"{body}", "db_path": DB_PATH })
-
 
     channel.basic_consume(
         queue=queue_name,

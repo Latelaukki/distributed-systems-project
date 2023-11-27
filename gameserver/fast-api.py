@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI, Request, Response
 from services.publish import  publish
 from services.subscribe import subscribe
-from services.database import init_db, get_messages
+from services.database import init_db, get_messages, store_message
 import uuid
 from threading import Thread
 
@@ -11,6 +11,7 @@ SERVER_ID = uuid.uuid4()
 
 DB_FOLDER = "./DB"
 DB_PATH = f"{DB_FOLDER}/{SERVER_ID}.db"
+EXCHANGE = "events"
 
 # Luodaan kansio tietokantaa varten. Subscribe kirjoittaa saapuneet viestit ko. kansiossa olevaan kantaan
 if not os.path.exists(DB_FOLDER): 
@@ -22,7 +23,11 @@ init_db(DB_PATH)
 # Käynnistetään oma threadi rabbitMQ:n pollaamiseen.
 # Ikuinen looppi, joten pitää olla omassa threadissa
 # Koska pyörii omassa threadissa, niin logit ei näy
-subscribeThread = Thread(target=subscribe, args=[SERVER_ID, DB_PATH])
+
+def callback(ch, method, properties, body):
+   store_message({ "msg": f"{body}", "db_path": DB_PATH })
+
+subscribeThread = Thread(target=subscribe, args=[EXCHANGE, callback])
 subscribeThread.start()
 
 
@@ -62,7 +67,7 @@ def get_maze(maze_id: str, player_id: str):
    message = f"Player {player_id} requested maze {maze_id} from {SERVER_ID}"
    
    # Make another thread for publishing the message to rabbitmq
-   publishThread = Thread(target=publish, args=[message])
+   publishThread = Thread(target=publish, args=[EXCHANGE,message])
    publishThread.start()
 
    return {f"Returned maze ({maze_id}) |---|--|----| from {SERVER_ID}"}

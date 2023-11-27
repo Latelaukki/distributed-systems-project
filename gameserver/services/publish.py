@@ -1,21 +1,21 @@
 import pika
 
 
-def publish(message="Hello world"):
-    print(f"Publishin' message {message}")
+def publish(exchange, message="Hello world"):
+
+    print(f"Publishin' message {message} to exchange {exchange}")
 
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(host='rabbitMQ'))
     channel = connection.channel()
 
-    channel.exchange_declare(exchange='ds_messages', exchange_type='fanout')
+    channel.exchange_declare(exchange=exchange, exchange_type='fanout')
 
-    routing_key = "messages"
     
     channel.basic_publish(
-        exchange='ds_messages',
-        routing_key=routing_key,
+        exchange=exchange,
+        routing_key='',
         body=message
     )
-    print(f" [x] Sent {routing_key}:{message}")
+    print(f" [x] Sent {exchange}:{message}")
     connection.close()
