@@ -3,6 +3,7 @@ import requests
 
 GAME_URL    = "http://localhost"
 GAME_PORT   = "7800"
+PLAYER_ID   = "1234"
 
 window = tk.Tk()
 window.geometry("500x500")
@@ -17,7 +18,7 @@ def update_current_maze(new_maze):
 
 def get_maze(maze_id):
     try: 
-        destination_url = f"{GAME_URL}:{GAME_PORT}/get-maze/{maze_id}"
+        destination_url = f"{GAME_URL}:{GAME_PORT}/get-maze/{maze_id}/{PLAYER_ID}/"
         print(f'Sending request to {destination_url}')
         response = requests.get(destination_url)
         print(f'Response from {destination_url} was {response.json()}')
