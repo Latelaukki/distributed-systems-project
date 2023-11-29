@@ -29,6 +29,17 @@ def get_maze(maze_id):
     except:
         print('Check that the backend is running')
 
+def consume_powerup(power_up):
+    try: 
+        destination_url = f"{GAME_URL}:{GAME_PORT}/consume-powerup/"
+        print(f'Sending request to {destination_url}')
+        response = requests.post(destination_url, json={"data": power_up})
+        print(f'Response from {destination_url} was {response.json()}')
+        return response.json
+    except:
+        print('Check that the backend is running')
+    
+
 maze1_button = tk.Button(
     text="enter maze 1", command= lambda: get_maze("1")
 )
@@ -41,9 +52,23 @@ maze3_button = tk.Button(
     text="enter maze 3", command= lambda: get_maze("3")
 )
 
+speed1_button = tk.Button(
+    text="Speed powerup", command= lambda: consume_powerup("speed")
+)
+# speed2_button = tk.Button(
+#     text="Speed powerup", command= lambda: get_maze("1")
+# )
+# speed3_button = tk.Button(
+#     text="Speed powerup", command= lambda: get_maze("1")
+# )
+
 maze1_button.pack(side=tk.TOP)
 maze2_button.pack(side=tk.LEFT)
 maze3_button.pack(side=tk.RIGHT)
+
+speed1_button.pack(side=tk.TOP)
+# speed2_button.pack(side=tk.LEFT)
+# speed3_button.pack(side=tk.RIGHT)
 
 current_maze_display.pack()
 
