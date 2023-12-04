@@ -1,17 +1,16 @@
 import os
 from fastapi import FastAPI, Request, Response
-from services.publish import  publish
 from services.subscribe import subscribe
-from services.database import init_db, get_messages, store_message
+from services.database import init_db, get_messages, store_message, consume_powerup_db, populate_powerups_db
+from services.thread_creator import start_new_publish_thread
 import uuid
 from threading import Thread
 
 SERVER_ID = uuid.uuid4()
-
-
 DB_FOLDER = "./DB"
 DB_PATH = f"{DB_FOLDER}/{SERVER_ID}.db"
 EXCHANGE = "events"
+POWER_UP_EXCHANGE = "power_up"
 
 # Luodaan kansio tietokantaa varten. Subscribe kirjoittaa saapuneet viestit ko. kansiossa olevaan kantaan
 if not os.path.exists(DB_FOLDER): 
@@ -19,6 +18,7 @@ if not os.path.exists(DB_FOLDER):
 
 # Alustetaan tietokanta
 init_db(DB_PATH)
+populate_powerups_db(DB_PATH)
 
 # Käynnistetään oma threadi rabbitMQ:n pollaamiseen.
 # Ikuinen looppi, joten pitää olla omassa threadissa
@@ -27,8 +27,14 @@ init_db(DB_PATH)
 def callback(ch, method, properties, body):
    store_message({ "msg": f"{body}", "db_path": DB_PATH })
 
+def consume_powerup_callback(ch, method, properties, body):
+   consume_powerup_db({ "msg": f"{body}", "db_path": DB_PATH })
+
 subscribeThread = Thread(target=subscribe, args=[EXCHANGE, callback])
+subscribeThreadPowerup = Thread(target=subscribe, args=[POWER_UP_EXCHANGE, consume_powerup_callback])
+
 subscribeThread.start()
+subscribeThreadPowerup.start()
 
 
 
@@ -63,14 +69,16 @@ def read_root():
 
 @app.get("/get-maze/{maze_id}/{player_id}")
 def get_maze(maze_id: str, player_id: str):
-
    message = f"Player {player_id} requested maze {maze_id} from {SERVER_ID}"
-   
    # Make another thread for publishing the message to rabbitmq
-   publishThread = Thread(target=publish, args=[EXCHANGE,message])
-   publishThread.start()
-
+   start_new_publish_thread(EXCHANGE,message)
    return {f"Returned maze ({maze_id}) |---|--|----| from {SERVER_ID}"}
+
+@app.post("/consume-powerup/")
+async def consume_powerup(request: Request):
+   message = await request.body()
+   start_new_publish_thread(POWER_UP_EXCHANGE,message)
+   return {f"consumed powerup: {message}"}
 
 @app.get('/get-server')
 def main(request: Request):
