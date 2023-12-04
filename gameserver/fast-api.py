@@ -1,16 +1,19 @@
 import os
 from fastapi import FastAPI, Request, Response
-from services.subscribe import subscribe
 from services.database import init_db, get_messages, store_message, consume_powerup_db, populate_powerups_db
-from services.thread_creator import start_new_publish_thread
+from services.messagebroker import Messagebroker
 import uuid
-from threading import Thread
+import json
 
 SERVER_ID = uuid.uuid4()
 DB_FOLDER = "./DB"
 DB_PATH = f"{DB_FOLDER}/{SERVER_ID}.db"
 EXCHANGE = "events"
 POWER_UP_EXCHANGE = "power_up"
+TOPICS = [EXCHANGE, POWER_UP_EXCHANGE]
+MYIP = "localhost"
+PORT = "7777"
+MESSAGEBROKER_IP = "http://localhost:3000/listen"
 
 # Luodaan kansio tietokantaa varten. Subscribe kirjoittaa saapuneet viestit ko. kansiossa olevaan kantaan
 if not os.path.exists(DB_FOLDER): 
@@ -20,25 +23,19 @@ if not os.path.exists(DB_FOLDER):
 init_db(DB_PATH)
 populate_powerups_db(DB_PATH)
 
-# Käynnistetään oma threadi rabbitMQ:n pollaamiseen.
-# Ikuinen looppi, joten pitää olla omassa threadissa
-# Koska pyörii omassa threadissa, niin logit ei näy
-
-def callback(ch, method, properties, body):
-   store_message({ "msg": f"{body}", "db_path": DB_PATH })
-
-def consume_powerup_callback(ch, method, properties, body):
-   consume_powerup_db({ "msg": f"{body}", "db_path": DB_PATH })
-
-subscribeThread = Thread(target=subscribe, args=[EXCHANGE, callback])
-subscribeThreadPowerup = Thread(target=subscribe, args=[POWER_UP_EXCHANGE, consume_powerup_callback])
-
-subscribeThread.start()
-subscribeThreadPowerup.start()
+# Messagebroker
+msgbroker = Messagebroker(MESSAGEBROKER_IP)
 
 
+# Viestitään messagebrokerirille, että halutaan kuunnella topicceja 
+for topic in TOPICS:
+   # Kerrotaan messagebrokerille, että tämä ip-osoitteesta ja portista haluaa kuunnella viestejä tietyn topicin alta
+   # Kun messagebroker saa viestin ko. topicciin, se lähettää sen tälle osoitteeseen ip:port/path
+   data = { "ip": MYIP, "port": PORT, "path": "messages", "topic": topic }
+   msgbroker.listen(data)
 
 app = FastAPI()
+
 
 @app.get("/")
 def read_root():
@@ -67,17 +64,37 @@ def read_root():
    return Response(content=html, media_type="text/html")
 
 
+@app.post("/messages")
+async def handle_message(request: Request):
+   # This will collect all messages from the messagebroker
+   message = await request.body()
+   message_parsed = json.loads(message)
+
+   if message_parsed["topic"] == POWER_UP_EXCHANGE:
+      consume_powerup_db()
+      return {"ok"}
+   
+   if message_parsed["topic"] == EXCHANGE:
+      store_message({ "msg": f"{message_parsed['message']}", "db_path": DB_PATH })
+      return {"ok"}
+   
+   
+   return {f"Not subscribed to {message_parsed['topic']}"}
+
+
 @app.get("/get-maze/{maze_id}/{player_id}")
 def get_maze(maze_id: str, player_id: str):
    message = f"Player {player_id} requested maze {maze_id} from {SERVER_ID}"
    # Make another thread for publishing the message to rabbitmq
-   start_new_publish_thread(EXCHANGE,message)
+   #start_new_publish_thread(EXCHANGE,message)
+   msgbroker.publish(EXCHANGE,message)
    return {f"Returned maze ({maze_id}) |---|--|----| from {SERVER_ID}"}
 
 @app.post("/consume-powerup/")
 async def consume_powerup(request: Request):
    message = await request.body()
-   start_new_publish_thread(POWER_UP_EXCHANGE,message)
+   msgbroker.publish(POWER_UP_EXCHANGE,message)
+   #start_new_publish_thread(POWER_UP_EXCHANGE,message)
    return {f"consumed powerup: {message}"}
 
 @app.get('/get-server')

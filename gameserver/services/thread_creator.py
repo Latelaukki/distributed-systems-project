@@ -1,4 +1,4 @@
-from services.publish import  publish
+from gameserver.services.messagebroker import  publish
 from threading import Thread
 
 def start_new_publish_thread(exhange, message):
