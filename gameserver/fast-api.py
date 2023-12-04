@@ -1,14 +1,12 @@
 import os
 from fastapi import FastAPI, Request, Response
-from services.publish import  publish, consume_powerup
 from services.subscribe import subscribe
-from services.database import init_db, get_messages, store_message, consume_powerup_db, populate_powerups
+from services.database import init_db, get_messages, store_message, consume_powerup_db, populate_powerups_db
+from services.thread_creator import start_new_publish_thread
 import uuid
 from threading import Thread
 
 SERVER_ID = uuid.uuid4()
-
-
 DB_FOLDER = "./DB"
 DB_PATH = f"{DB_FOLDER}/{SERVER_ID}.db"
 EXCHANGE = "events"
@@ -20,7 +18,7 @@ if not os.path.exists(DB_FOLDER):
 
 # Alustetaan tietokanta
 init_db(DB_PATH)
-populate_powerups(DB_PATH)
+populate_powerups_db(DB_PATH)
 
 # Käynnistetään oma threadi rabbitMQ:n pollaamiseen.
 # Ikuinen looppi, joten pitää olla omassa threadissa
@@ -33,9 +31,10 @@ def consume_powerup_callback(ch, method, properties, body):
    consume_powerup_db({ "msg": f"{body}", "db_path": DB_PATH })
 
 subscribeThread = Thread(target=subscribe, args=[EXCHANGE, callback])
-subscribeThread2 = Thread(target=subscribe, args=[POWER_UP_EXCHANGE, consume_powerup_callback])
+subscribeThreadPowerup = Thread(target=subscribe, args=[POWER_UP_EXCHANGE, consume_powerup_callback])
+
 subscribeThread.start()
-subscribeThread2.start()
+subscribeThreadPowerup.start()
 
 
 
@@ -70,26 +69,16 @@ def read_root():
 
 @app.get("/get-maze/{maze_id}/{player_id}")
 def get_maze(maze_id: str, player_id: str):
-
    message = f"Player {player_id} requested maze {maze_id} from {SERVER_ID}"
-   
    # Make another thread for publishing the message to rabbitmq
-   publishThread = Thread(target=publish, args=[EXCHANGE,message])
-   publishThread.start()
-
+   start_new_publish_thread(EXCHANGE,message)
    return {f"Returned maze ({maze_id}) |---|--|----| from {SERVER_ID}"}
 
 @app.post("/consume-powerup/")
 async def consume_powerup(request: Request):
-   data = await request.body()
-   print('data was ', data)
-
-   #message = f""
-   # Make another thread for publishing the message to rabbitmq
-   publishThread = Thread(target=publish, args=[POWER_UP_EXCHANGE,data])
-   publishThread.start()
-
-   return {f"SENT POWERUP CONSUMED"}
+   message = await request.body()
+   start_new_publish_thread(POWER_UP_EXCHANGE,message)
+   return {f"consumed powerup: {message}"}
 
 @app.get('/get-server')
 def main(request: Request):

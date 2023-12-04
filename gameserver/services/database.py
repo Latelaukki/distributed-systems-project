@@ -10,9 +10,7 @@ def get_messages(db_path):
     cur.close()
     db_con.close()
 
-    
     return messages
-
 
 def store_message(params):
     db_path = params["db_path"]
@@ -63,15 +61,9 @@ def init_db(db_path):
     cur.close()
     con.close()
 
-def populate_powerups(db_path):
+def populate_powerups_db(db_path):
     con = make_db_con(db_path)
     cur = con.cursor()
-    # cur.execute("""
-    #         INSER INTO TABLE poweup(
-    #             msg TEXT NOT NULL
-    #         );
-    # """)
-
     cur.execute("INSERT INTO powerup VALUES (?,?)", ("Speed",1))
     con.commit()
     cur.close()
