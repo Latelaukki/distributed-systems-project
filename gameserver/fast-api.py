@@ -13,7 +13,7 @@ POWER_UP_EXCHANGE = "power_up"
 TOPICS = [EXCHANGE, POWER_UP_EXCHANGE]
 MYIP = "localhost"
 PORT = "7777"
-MESSAGEBROKER_IP = "http://localhost:3000/listen"
+MESSAGEBROKER_IP = "http://localhost:3000"
 
 # Luodaan kansio tietokantaa varten. Subscribe kirjoittaa saapuneet viestit ko. kansiossa olevaan kantaan
 if not os.path.exists(DB_FOLDER): 
@@ -71,7 +71,7 @@ async def handle_message(request: Request):
    message_parsed = json.loads(message)
 
    if message_parsed["topic"] == POWER_UP_EXCHANGE:
-      consume_powerup_db()
+      consume_powerup_db({ "msg": f"{message_parsed['message']}", "db_path": DB_PATH })
       return {"ok"}
    
    if message_parsed["topic"] == EXCHANGE:

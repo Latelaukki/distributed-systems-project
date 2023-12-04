@@ -69,6 +69,7 @@ def handle_message(srvr):
         print(f"Posting {message} to {ip}:{port}/{path}")
 
         requests.post(f"http://{ip}:{port}/{path}", json=data_encoded)
+    respond_ok(srvr)
     
 
 

@@ -8,8 +8,8 @@ class Messagebroker:
     
 
     def publish(self, topic, message):
-        requests.post(self.ip,json={ "message": message, "topic": topic })
+        requests.post(self.ip + "/message",json={ "message": message, "topic": topic })
 
 
     def listen(self, data):
-        requests.post(self.ip,json=data)
+        requests.post(self.ip + "/listen",json=data)
