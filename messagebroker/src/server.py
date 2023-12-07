@@ -65,10 +65,15 @@ def handle_message(srvr):
     for key in topics[topic].keys():
         
         ip, port, path = topics[topic][key]
-        
-        print(f"Posting {message} to {ip}:{port}/{path}")
 
-        requests.post(f"http://{ip}:{port}/{path}", json=data_encoded)
+        target = f"{ip}:{port}/{path}"
+        
+        print(f"Posting {message} to {target}")
+        try:
+            requests.post(f"http://{target}", json=data_encoded)
+        except:
+            print(f"Could not connect to {target}")
+
     respond_ok(srvr)
     
 

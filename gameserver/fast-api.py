@@ -4,6 +4,7 @@ from services.database import init_db, get_messages, store_message, consume_powe
 from services.messagebroker import Messagebroker
 import uuid
 import json
+import subprocess
 
 SERVER_ID = uuid.uuid4()
 DB_FOLDER = "./DB"
@@ -11,9 +12,22 @@ DB_PATH = f"{DB_FOLDER}/{SERVER_ID}.db"
 EXCHANGE = "events"
 POWER_UP_EXCHANGE = "power_up"
 TOPICS = [EXCHANGE, POWER_UP_EXCHANGE]
-MYIP = "localhost"
 PORT = "7777"
 MESSAGEBROKER_IP = "http://localhost:3000"
+
+# kokeillaan löytyykö messagebrokerin ip:tä levyltä
+
+msgbroker_ip_file = "messagebroker.txt"
+if os.path.exists(msgbroker_ip_file):
+   with open(msgbroker_ip_file, "r") as f:
+      ip = f.read().replace("\n", "")
+      MESSAGEBROKER_IP = f"http://{ip}:3000"
+      print(f"Read msgbroker ip from disk ({MESSAGEBROKER_IP})")
+
+# ip-osoite
+cmd_hostname = subprocess.run(['hostname', '-I'], stdout=subprocess.PIPE)
+myip = str(cmd_hostname.stdout, encoding="utf-8").replace("\n", "").replace(" ", "")
+
 
 # Luodaan kansio tietokantaa varten. Subscribe kirjoittaa saapuneet viestit ko. kansiossa olevaan kantaan
 if not os.path.exists(DB_FOLDER): 
@@ -31,7 +45,7 @@ msgbroker = Messagebroker(MESSAGEBROKER_IP)
 for topic in TOPICS:
    # Kerrotaan messagebrokerille, että tämä ip-osoitteesta ja portista haluaa kuunnella viestejä tietyn topicin alta
    # Kun messagebroker saa viestin ko. topicciin, se lähettää sen tälle osoitteeseen ip:port/path
-   data = { "ip": MYIP, "port": PORT, "path": "messages", "topic": topic }
+   data = { "ip": myip, "port": PORT, "path": "messages", "topic": topic }
    msgbroker.listen(data)
 
 app = FastAPI()

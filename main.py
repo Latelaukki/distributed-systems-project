@@ -1,7 +1,7 @@
 import tkinter as tk
 import requests
 
-GAME_URL    = "http://localhost"
+GAME_URL    = "http://128.214.11.91"
 GAME_PORT   = "7800"
 PLAYER_ID   = "1234"
 

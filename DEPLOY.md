@@ -9,10 +9,11 @@ Specically follow guidelines from `If you also need to copy files between your h
 After configuring something like this:
 
     ssh -f -N -q pangtunnel 
-    scp -r gameserver/ duuni1:dungeon
-    scp -r messagebroker/ duuni1:dungeon
+    scp -r gameserver/*.* duuni1:
+    scp -r gameserver/services duuni1:
+    scp -r messagebroker/ duuni1:
 
-You should find folder dungeon/gameserver and dungeon/messagebroker
+You should find folder /gameserver and /messagebroker
 
 Do the above for one machine. The two others wont a need messagebroker.
 
@@ -24,12 +25,13 @@ Do the above for one machine. The two others wont a need messagebroker.
 
 # Starting a gameserver
 
-0. Find out the ip of the server using `ip a`
-1. `cd dungeon`
+0. store the ip-address of messagebroker to messagebroker.txt
+1. `cd gameserver`
 2. `python3 -m venv .venv` (if not done already)
-3. `cd gameserver && pip install -r requirements.txt`
-4. Manipulate `fast-api.py` to have correct ip of self and messagebroker
-5. Start the server (after correcting the ip) `python3 -m uvicorn fast-api:app --reload --host XXX.XXX.X.X --port 7777`
+3. `source .venv/bin/activate && pip install -r requirements.txt`
+4. Start the server with `source start.sh`
+
+        
 
 # Testing
 
