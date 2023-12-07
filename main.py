@@ -1,13 +1,24 @@
 import tkinter as tk
 import requests
 
-GAME_URL    = "http://128.214.11.91"
-GAME_PORT   = "7800"
+game_url    = "http://localhost:7800"
+game_port   = "7800"
 PLAYER_ID   = "1234"
 
 window = tk.Tk()
 window.geometry("500x500")
 
+# Aloitetaan hakemalla pelipalvelimen ip "load balancerilta"
+# Palauttaa ip-osoitteen ja portin, josta löytyy pelipalvelin
+initial_response = requests.get(game_url)
+url = initial_response.text
+
+game_url = 'http://' + url.split(':')[0]
+game_port = url.split(':')[1]
+
+print("New game_url:", f"{game_url}:{game_port}")
+
+# Pelin käynnistys
 
 current_maze_display = tk.Text(window, height=5, width=25)
 
@@ -17,7 +28,7 @@ def update_frontend_message(message):
 
 def get_maze(maze_id):
     try: 
-        destination_url = f"{GAME_URL}:{GAME_PORT}/get-maze/{maze_id}/{PLAYER_ID}/"
+        destination_url = f"{game_url}:{game_port}/get-maze/{maze_id}/{PLAYER_ID}/"
         print(f'Sending request to {destination_url}')
         response = requests.get(destination_url)
         print(f'Response from {destination_url} was {response.json()}')
@@ -27,7 +38,7 @@ def get_maze(maze_id):
 
 def consume_powerup(power_up):
     try: 
-        destination_url = f"{GAME_URL}:{GAME_PORT}/consume-powerup/"
+        destination_url = f"{game_url}:{game_port}/consume-powerup/"
         response = requests.post(destination_url, json={"data": power_up})
         update_frontend_message(f"Consumed powerup: {power_up}")
         print(f'Response from {destination_url} was {response.json()}')
