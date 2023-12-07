@@ -12,6 +12,7 @@ After configuring something like this:
     scp -r gameserver/*.* duuni1:
     scp -r gameserver/services duuni1:
     scp -r messagebroker/ duuni1:
+    scp -r loadbalancer/ duuni1:
 
 You should find folder /gameserver and /messagebroker
 
