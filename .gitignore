@@ -2,3 +2,4 @@ __pycache__
 .venv
 /gameserver/DB
 loadbalancer/servers.txt
+**/messagebroker.txt

@@ -8,6 +8,7 @@ class Messagebroker:
     
 
     def publish(self, topic, message):
+        message = message.decode('utf-8')
         requests.post(self.ip + "/message",json={ "message": message, "topic": topic })
 
 

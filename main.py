@@ -3,7 +3,6 @@ import requests
 
 game_url    = "http://localhost:7800"
 game_port   = "7800"
-PLAYER_ID   = "1234"
 
 window = tk.Tk()
 window.geometry("500x500")
@@ -26,48 +25,59 @@ def update_frontend_message(message):
     current_maze_display.delete("1.0", tk.END)
     current_maze_display.insert("1.0", f"{message}")
 
-def get_maze(maze_id):
-    try: 
-        destination_url = f"{game_url}:{game_port}/get-maze/{maze_id}/{PLAYER_ID}/"
+def get_maze():
+    try:
+        maze_button.pack_forget()
+        back_button.pack(side=tk.TOP)
+        speed_button.pack(side=tk.TOP)
+        current_maze_display.pack(side=tk.TOP)
+
+        destination_url = f"{game_url}:{game_port}/get-server"
         print(f'Sending request to {destination_url}')
         response = requests.get(destination_url)
         print(f'Response from {destination_url} was {response.json()}')
-        update_frontend_message(f"Current maze: {maze_id}")
+        update_frontend_message(f"Entered to the maze")
     except:
         print('Check that the backend is running')
 
 def consume_powerup(power_up):
     try: 
-        destination_url = f"{game_url}:{game_port}/consume-powerup/"
+        ask_servers(power_up)
+        destination_url = f"{game_url}:{game_port}/consume-powerup"
         response = requests.post(destination_url, json={"data": power_up})
         update_frontend_message(f"Consumed powerup: {power_up}")
         print(f'Response from {destination_url} was {response.json()}')
     except:
         print('Check that the backend is running')
     
+def ask_servers(power_up):
+    try: 
+        destination_url = f"{game_url}:{game_port}/consensus"
+        response = requests.post(destination_url, json={"data" : power_up})
+        print(f'Response from {destination_url} was {response.json()}')
+    except:
+        print('Check that the backend is running')
 
-maze1_button = tk.Button(
-    text="enter maze 1", command= lambda: get_maze("1")
+def show_start_view():
+    maze_button.pack(side=tk.TOP)
+    back_button.pack_forget()
+    current_maze_display.pack_forget()
+    speed_button.pack_forget()          
+
+maze_button = tk.Button(
+    text="enter maze", command= get_maze
+)
+back_button = tk.Button(
+    text="back", command= show_start_view
+)
+speed_button = tk.Button(
+    text="Speed powerup", command= lambda: consume_powerup("Speed")
 )
 
-maze2_button = tk.Button(
-    text="enter maze 2", command= lambda: get_maze("2")
-)
+maze_button.pack(side=tk.TOP)
+back_button.pack_forget()
+speed_button.pack_forget()
 
-maze3_button = tk.Button(
-    text="enter maze 3", command= lambda: get_maze("3")
-)
-
-speed1_button = tk.Button(
-    text="Speed powerup", command= lambda: consume_powerup("speed")
-)
-
-maze1_button.pack(side=tk.TOP)
-maze2_button.pack(side=tk.LEFT)
-maze3_button.pack(side=tk.RIGHT)
-
-speed1_button.pack(side=tk.TOP)
-
-current_maze_display.pack()
+current_maze_display.pack_forget()
 
 window.mainloop()

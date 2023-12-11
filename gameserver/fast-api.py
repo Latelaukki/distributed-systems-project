@@ -10,10 +10,15 @@ SERVER_ID = uuid.uuid4()
 DB_FOLDER = "./DB"
 DB_PATH = f"{DB_FOLDER}/{SERVER_ID}.db"
 EXCHANGE = "events"
+ELECTION = "election"
 POWER_UP_EXCHANGE = "power_up"
-TOPICS = [EXCHANGE, POWER_UP_EXCHANGE]
+CONSENSUS = "consensus"
+TOPICS = [EXCHANGE, CONSENSUS, POWER_UP_EXCHANGE]
 PORT = "7777"
 MESSAGEBROKER_IP = "http://localhost:3000"
+LOCAL_LOG = {"Speed" : "available"}
+RESPONSE_TOPIC = str(SERVER_ID)
+RESPONSES = []
 
 # kokeillaan löytyykö messagebrokerin ip:tä levyltä
 
@@ -37,9 +42,9 @@ if not os.path.exists(DB_FOLDER):
 init_db(DB_PATH)
 populate_powerups_db(DB_PATH)
 
+
 # Messagebroker
 msgbroker = Messagebroker(MESSAGEBROKER_IP)
-
 
 # Viestitään messagebrokerirille, että halutaan kuunnella topicceja 
 for topic in TOPICS:
@@ -47,6 +52,8 @@ for topic in TOPICS:
    # Kun messagebroker saa viestin ko. topicciin, se lähettää sen tälle osoitteeseen ip:port/path
    data = { "ip": myip, "port": PORT, "path": "messages", "topic": topic }
    msgbroker.listen(data)
+
+
 
 app = FastAPI()
 
@@ -85,6 +92,7 @@ async def handle_message(request: Request):
    message_parsed = json.loads(message)
 
    if message_parsed["topic"] == POWER_UP_EXCHANGE:
+      print("hello")
       consume_powerup_db({ "msg": f"{message_parsed['message']}", "db_path": DB_PATH })
       return {"ok"}
    
@@ -92,26 +100,45 @@ async def handle_message(request: Request):
       store_message({ "msg": f"{message_parsed['message']}", "db_path": DB_PATH })
       return {"ok"}
    
+   if message_parsed["topic"] == CONSENSUS:
+      if LOCAL_LOG["Speed"] == "available":
+         message = {"message" : "available"}
+         msgbroker.publish(RESPONSE_TOPIC, message)
+      else:
+         message = {"message" : "unavailable"}
+      msgbroker.publish(RESPONSE_TOPIC, message)
+      return {"ok"}
    
+   if message_parsed["topic"] == RESPONSE_TOPIC:
+      RESPONSES.append(message_parsed["message"])
+      if len(RESPONSES) == 3:
+         if "unavailable" not in RESPONSES:
+            msgbroker.publish(POWER_UP_EXCHANGE,message)
+            return {"ok"}
+
    return {f"Not subscribed to {message_parsed['topic']}"}
 
-
-@app.get("/get-maze/{maze_id}/{player_id}")
-def get_maze(maze_id: str, player_id: str):
-   message = f"Player {player_id} requested maze {maze_id} from {SERVER_ID}"
-   # Make another thread for publishing the message to rabbitmq
-   #start_new_publish_thread(EXCHANGE,message)
-   msgbroker.publish(EXCHANGE,message)
-   return {f"Returned maze ({maze_id}) |---|--|----| from {SERVER_ID}"}
 
 @app.post("/consume-powerup/")
 async def consume_powerup(request: Request):
    message = await request.body()
    msgbroker.publish(POWER_UP_EXCHANGE,message)
-   #start_new_publish_thread(POWER_UP_EXCHANGE,message)
    return {f"consumed powerup: {message}"}
 
 @app.get('/get-server')
 def main(request: Request):
-    host_url = request.headers.get('host')
-    return {f"This is server {host_url}"}
+   host_url = request.headers.get('host')
+   return {f"This is server {host_url}"}
+
+@app.post("/consensus")
+async def consensus(request: Request):
+   message = await request.body()
+   message_parsed = json.loads(message)
+   if message_parsed["data"] == "Speed":
+      LOCAL_LOG["Speed"] == "unavailable"
+
+   data = {"ip": myip, "port": PORT, "path": "messages", "topic": RESPONSE_TOPIC}
+   msgbroker.listen(data)
+
+   msgbroker.publish(CONSENSUS, message)
+   return {f"Waiting for responses: {message}"}
