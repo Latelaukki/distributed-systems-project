@@ -36,7 +36,7 @@ if os.path.exists(msgbroker_ip_file):
 # ip-osoite
 cmd_hostname = subprocess.run(['hostname', '-I'], stdout=subprocess.PIPE)
 myip = str(cmd_hostname.stdout, encoding="utf-8").replace("\n", "").replace(" ", "")
-myip = 'localhost'
+#myip = 'localhost'
 
 # Luodaan kansio tietokantaa varten. Subscribe kirjoittaa saapuneet viestit ko. kansiossa olevaan kantaan
 if not os.path.exists(DB_FOLDER): 
@@ -129,12 +129,6 @@ async def handle_message(request: Request):
       msgbroker.publish(uuid, message)
       return {"ok"}
    
-   # if topic == RESPONSE_TOPIC:
-   #    RESPONSES.append(message_parsed["message"])
-   #    if len(RESPONSES) == 3:
-   #       if "unavailable" not in RESPONSES:
-   #          msgbroker.publish(POWER_UP_EXCHANGE,message)
-   #          return {"ok"}
 
    return {f"Not subscribed to {message_parsed['topic']}"}
 
@@ -163,17 +157,3 @@ def power_available(request: Request):
 def main(request: Request):
    host_url = request.headers.get('host')
    return {f"This is server {host_url}"}
-
-# @app.post("/consensus")
-# async def consensus(request: Request):
-#    message = await request.body()
-#    message = message.decode("utf-8")
-#    message_parsed = json.loads(message)
-#    if message_parsed["data"] == "Speed":
-#       LOCAL_LOG["Speed"] == "unavailable"
-
-#    data = {"ip": myip, "port": PORT, "path": "messages", "topic": RESPONSE_TOPIC}
-#    msgbroker.listen(data)
-
-#    msgbroker.publish(CONSENSUS, message)
-#    return {f"Waiting for responses: {message}"}
