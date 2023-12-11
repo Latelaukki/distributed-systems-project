@@ -6,9 +6,8 @@ if len(sys.argv) < 2:
     exit(1)
 
 port = int(sys.argv[1])
-
+print(f"Messagebroker running in port {port}")
 run(port)
 
-print(f"Running in port {port}")
 
 

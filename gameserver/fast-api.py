@@ -14,7 +14,7 @@ EXCHANGE = "events"
 ELECTION = "election"
 POWER_UP_EXCHANGE = "power_up"
 CONSENSUS = "consensus"
-TOPICS = [EXCHANGE, CONSENSUS, POWER_UP_EXCHANGE]
+TOPICS = [EXCHANGE, CONSENSUS, POWER_UP_EXCHANGE, str(SERVER_ID)]
 PORT = "7777"
 MESSAGEBROKER_IP = "http://localhost:3000"
 LOCAL_LOG = {"Speed" : "available"}
@@ -95,28 +95,46 @@ async def handle_message(request: Request):
    message = await request.body()
    message_parsed = json.loads(message)
 
-   if message_parsed["topic"] == POWER_UP_EXCHANGE:
-      consume_powerup_db({ "msg": f"{message_parsed['message']}", "db_path": DB_PATH })
+   topic = message_parsed["topic"]
+   msg_content = message_parsed['message']
+
+   if topic == str(SERVER_ID):
+      print(f"Received answer '{msg_content}' to consensus request")
+      if msg_content == "available":
+         RESPONSES.append(msg_content)
+
+   if topic == POWER_UP_EXCHANGE:
+      consume_powerup_db({ "msg": f"{msg_content}", "db_path": DB_PATH })
       return {"ok"}
    
-   if message_parsed["topic"] == EXCHANGE:
-      store_message({ "msg": f"{message_parsed['message']}", "db_path": DB_PATH })
+   if topic == EXCHANGE:
+      store_message({ "msg": f"{msg_content}", "db_path": DB_PATH })
       return {"ok"}
    
-   if message_parsed["topic"] == CONSENSUS:
+   if topic == CONSENSUS:
+      uuid = msg_content
+      if uuid == str(SERVER_ID):
+         # Request is from self. No need to do anything.
+         return {"ok"}
+      
       if LOCAL_LOG["Speed"] == "available":
-         message = {"message" : "available"}
+         message = "available"
       else:
-         message = {"message" : "unavailable"}
-      msgbroker.publish(RESPONSE_TOPIC, message)
+         message = "unavailable"
+
+      # Update status of self
+      LOCAL_LOG["Speed"] == "unavailable"
+
+      print(f"Responding '{message}' to consensus request from {uuid}")
+      msgbroker.publish(uuid, message)
       return {"ok"}
    
-   if message_parsed["topic"] == RESPONSE_TOPIC:
-      RESPONSES.append(message_parsed["message"])
-      if len(RESPONSES) == 3:
-         if "unavailable" not in RESPONSES:
-            msgbroker.publish(POWER_UP_EXCHANGE,message)
-            return {"ok"}
+   # if topic == RESPONSE_TOPIC:
+   #    RESPONSES.append(message_parsed["message"])
+   #    if len(RESPONSES) == 3:
+   #       if "unavailable" not in RESPONSES:
+   #          msgbroker.publish(POWER_UP_EXCHANGE,message)
+   #          return {"ok"}
 
    return {f"Not subscribed to {message_parsed['topic']}"}
 
@@ -126,24 +144,36 @@ async def consume_powerup(request: Request):
    message = await request.body()
    message = message.decode("utf-8")
    message_parsed = json.loads(message)
-   msgbroker.publish(POWER_UP_EXCHANGE,message_parsed)
+   msgbroker.publish(CONSENSUS,str(SERVER_ID))
+   LOCAL_LOG["Speed"] = "unavailable"
    return {f"consumed powerup: {message_parsed}"}
+
+@app.get('/power-up-available/')
+def power_available(request: Request):
+   status = LOCAL_LOG["Speed"]
+
+   if len(RESPONSES) > 0 and LOCAL_LOG["Speed"] == "unavailable":
+      return "available"
+   if LOCAL_LOG["Speed"] == "unavailable":
+      return "unavailable"
+
+   return "pending"
 
 @app.get('/get-server')
 def main(request: Request):
    host_url = request.headers.get('host')
    return {f"This is server {host_url}"}
 
-@app.post("/consensus")
-async def consensus(request: Request):
-   message = await request.body()
-   message = message.decode("utf-8")
-   message_parsed = json.loads(message)
-   if message_parsed["data"] == "Speed":
-      LOCAL_LOG["Speed"] == "unavailable"
+# @app.post("/consensus")
+# async def consensus(request: Request):
+#    message = await request.body()
+#    message = message.decode("utf-8")
+#    message_parsed = json.loads(message)
+#    if message_parsed["data"] == "Speed":
+#       LOCAL_LOG["Speed"] == "unavailable"
 
-   data = {"ip": myip, "port": PORT, "path": "messages", "topic": RESPONSE_TOPIC}
-   msgbroker.listen(data)
+#    data = {"ip": myip, "port": PORT, "path": "messages", "topic": RESPONSE_TOPIC}
+#    msgbroker.listen(data)
 
-   msgbroker.publish(CONSENSUS, message)
-   return {f"Waiting for responses: {message}"}
+#    msgbroker.publish(CONSENSUS, message)
+#    return {f"Waiting for responses: {message}"}

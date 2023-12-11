@@ -1,5 +1,6 @@
 import tkinter as tk
 import requests
+import time
 
 game_url    = "http://localhost:7800"
 game_port   = "7800"
@@ -41,14 +42,39 @@ def get_maze():
         print('Check that the backend is running')
 
 def consume_powerup(power_up):
+    
     try: 
-        ask_servers(power_up)
         destination_url = f"{game_url}:{game_port}/consume-powerup/"
         response = requests.post(destination_url, json={"data": power_up})
-        update_frontend_message(f"Consumed powerup: {power_up}")
+        
         print(f'Response from {destination_url} was {response.json()}')
+
+        update_frontend_message(f"Waiting confirmation..")
     except:
-        print('Check that the backend is running')
+        print('Unable to consume powerup. Check that the backend is running')
+
+    status = ""
+    try: 
+        destination_url = f"{game_url}:{game_port}/power-up-available/"
+        while True:
+            time.sleep(1)
+            print("polling..")
+            response = requests.get(destination_url)
+        
+            print(f'Response from {destination_url} was {response.text}')
+            if response.text != "pending":
+                status = response.text
+
+                break
+    except Exception as error:
+        print('Unable to confirm powerup consumption. Check that the backend is running', error)
+    print("Status", status)
+    update_frontend_message("Consumed power-up" if status == '"available"' else "Power-up taken")
+
+        
+
+
+    
     
 def ask_servers(power_up):
     try: 
