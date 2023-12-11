@@ -1,6 +1,7 @@
 import json
 import requests
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from threading import Thread
 
 # Tämä kerää tietyn topicin kuuntelijat. Esim:
 #   {
@@ -12,6 +13,12 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 #
 topics = {}
 
+def post_message(target, message):
+    requests.post(target, json=message)
+
+def new_post_message_thread(target, message):
+   post_thread = Thread(target=post_message, args=[target,message])
+   post_thread.start()
 
 def respond_ok(srvr):
     srvr.send_response(200)
@@ -62,17 +69,18 @@ def handle_message(srvr):
         respond_ok(srvr)
         return
     
+    
     for key in topics[topic].keys():
         
         ip, port, path = topics[topic][key]
 
-        target = f"{ip}:{port}/{path}"
+        target = f"http://{ip}:{port}/{path}"
         
-        print(f"Posting {message} to {target}")
+        print(f"Posting {message} under topic {topic} to {target}")
         try:
-            requests.post(f"http://{target}", json=data_encoded)
-        except:
-            print(f"Could not connect to {target}")
+            new_post_message_thread(target, data_encoded)
+        except Exception as error:
+            print(f"Could not connect to {target}: ", error)
 
     respond_ok(srvr)
     

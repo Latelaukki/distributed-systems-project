@@ -43,7 +43,7 @@ def get_maze():
 def consume_powerup(power_up):
     try: 
         ask_servers(power_up)
-        destination_url = f"{game_url}:{game_port}/consume-powerup"
+        destination_url = f"{game_url}:{game_port}/consume-powerup/"
         response = requests.post(destination_url, json={"data": power_up})
         update_frontend_message(f"Consumed powerup: {power_up}")
         print(f'Response from {destination_url} was {response.json()}')

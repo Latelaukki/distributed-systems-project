@@ -5,6 +5,7 @@ from services.messagebroker import Messagebroker
 import uuid
 import json
 import subprocess
+import sys
 
 SERVER_ID = uuid.uuid4()
 DB_FOLDER = "./DB"
@@ -20,6 +21,9 @@ LOCAL_LOG = {"Speed" : "available"}
 RESPONSE_TOPIC = str(SERVER_ID)
 RESPONSES = []
 
+PORT = sys.argv[-1]
+print(f"Gameserver starting in port {PORT}")
+
 # kokeillaan löytyykö messagebrokerin ip:tä levyltä
 
 msgbroker_ip_file = "messagebroker.txt"
@@ -32,7 +36,7 @@ if os.path.exists(msgbroker_ip_file):
 # ip-osoite
 cmd_hostname = subprocess.run(['hostname', '-I'], stdout=subprocess.PIPE)
 myip = str(cmd_hostname.stdout, encoding="utf-8").replace("\n", "").replace(" ", "")
-
+myip = 'localhost'
 
 # Luodaan kansio tietokantaa varten. Subscribe kirjoittaa saapuneet viestit ko. kansiossa olevaan kantaan
 if not os.path.exists(DB_FOLDER): 
@@ -92,7 +96,6 @@ async def handle_message(request: Request):
    message_parsed = json.loads(message)
 
    if message_parsed["topic"] == POWER_UP_EXCHANGE:
-      print("hello")
       consume_powerup_db({ "msg": f"{message_parsed['message']}", "db_path": DB_PATH })
       return {"ok"}
    
@@ -103,7 +106,6 @@ async def handle_message(request: Request):
    if message_parsed["topic"] == CONSENSUS:
       if LOCAL_LOG["Speed"] == "available":
          message = {"message" : "available"}
-         msgbroker.publish(RESPONSE_TOPIC, message)
       else:
          message = {"message" : "unavailable"}
       msgbroker.publish(RESPONSE_TOPIC, message)
@@ -122,8 +124,10 @@ async def handle_message(request: Request):
 @app.post("/consume-powerup/")
 async def consume_powerup(request: Request):
    message = await request.body()
-   msgbroker.publish(POWER_UP_EXCHANGE,message)
-   return {f"consumed powerup: {message}"}
+   message = message.decode("utf-8")
+   message_parsed = json.loads(message)
+   msgbroker.publish(POWER_UP_EXCHANGE,message_parsed)
+   return {f"consumed powerup: {message_parsed}"}
 
 @app.get('/get-server')
 def main(request: Request):
@@ -133,6 +137,7 @@ def main(request: Request):
 @app.post("/consensus")
 async def consensus(request: Request):
    message = await request.body()
+   message = message.decode("utf-8")
    message_parsed = json.loads(message)
    if message_parsed["data"] == "Speed":
       LOCAL_LOG["Speed"] == "unavailable"
