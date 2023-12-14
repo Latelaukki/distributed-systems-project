@@ -1,50 +1,60 @@
 # distributed-systems-project
 
+The application consist of
+
+- Gameservers responsible for handling events in the game
+- Load balancer that allocates clients to servers
+- Messagebroker that passes messages between servers
+- A frontend for interacting with the system
+
+These are further explained in the project final report.
+
 ## Frontend
 
 Frontend is built with Tkinter but can be changed to PyGame.
 
 Frontend can be started by running the main.py file in [src/](/src) folder:
-
 ```
 python3 main.py
 ```
-Responses is printed in the terminal.
+Responses are printed in the terminal.
 
-The frontend displays the number of the maze in which the player is atm.
+## Deploying the project onto HY-machines
 
-## Backend
-- Uses Python FastApi and Uvicorn to create servers
-- Uses RabbitMQ for message queues
-- Docker for running the services
+Setup SSH-connections and copy files using this guide:
 
-How to run with Docker. Use with `--build` flag if you're running the app for the first time.
+    https://helpdesk.it.helsinki.fi/en/instructions/logging-and-connections/using-cubbli-workstation-home-computer#using-cubbli-on-a-linux-home-computer
 
-1. Start by setting up the message-broker in one terminal with `cd rabbitmq && docker compose up`.
-2. When rabbitmq is up, open another terminal and do `cd gameserver && docker compose up`. This will start three fast-api's and a nginx-reverse proxy.
+Specically follow guidelines from `If you also need to copy files between your home ...` onwards.
 
-Then you access the api in [http://localhost:7800](http://localhost:7800)
+After configuration, do something like this (assuming you named the machines duuni1, duuni2, etc..)
 
-## Architecture atm
+    ssh -f -N -q pangtunnel 
+    scp -r gameserver/*.* duuni1:
+    scp -r gameserver/services duuni1:
+    scp -r messagebroker/ duuni1:
+    scp -r loadbalancer/ duuni1:
 
+You should find folder /gameserver and /messagebroker
 
-At the moment the project is as follows
+Do the above for one machine. The two others wont a need messagebroker, but do need a gameserver.
 
- ![Architecture](/documentation/architecture.png)
+### Starting a messagebroker
 
+1. `cd messagebroker`
+2. `python3 main.py 3000` will start the messagebroker in the port 3000.
 
-When a player clicks a button to enter, for example, maze 1, a request is passed via the reverse proxy to one of the servers. The server then publishes the request to the message broker from which it is passed onto all of the servers (itself also?). 
+### Starting a load balancer
 
-The servers all subscribe to the same message topic. When they receive a message they store it to a local sqlite-database. You can see a list of stored messages of a (random) server from [http://localhost:7800/messages](http://localhost:7800/messages).
+1. `cd loadbalancer`
+2. Store the ip-addresses of the machines gameservers will be deployed to `servers.txt` (one ip per line)
+2. `python3 main.py 7800` will start the loadbalancer in the port 7800.
 
-For example this shows thatserver with ID *89f709..* has stored two messages. One originating from itself and one from *5042898c ..*. Each server is assigned an uuid when started.
+### Starting a gameserver
 
- ![messages-example](/documentation/messages-example.png)
+0. Store the ip-address of the machine messagebroker was deployed to `messagebroker.txt`
+1. `cd gameserver`
+2. Create a virtual environment `python3 -m venv .venv` (if not done already)
+3. `source .venv/bin/activate && pip install -r requirements.txt`
+4. Start the server with `source start.sh`
 
-
-## Notes
-
-- `gameserver/services/publish.py` and `gameserver/services/subscribe.py` are pretty much copied from: [RabbitMQ Publish/Subscribe](https://www.rabbitmq.com/tutorials/tutorial-three-python.html) 
-
-- nginx acts as a load balancer. Each request to port 7800 is passed one of the three gameservers (dont which one up ahead). It does not know anything about the contents of the requests.
-- All messages are posted under the same topic (the pub/sub functions should accept the topic as a parameter)
