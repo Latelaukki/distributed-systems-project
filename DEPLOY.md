@@ -1,12 +1,12 @@
 # Instructions on how to deploy HY-machines
 
-Setup connection and copy files using this guide:
+Setup SSH-connections and copy files using this guide:
 
     https://helpdesk.it.helsinki.fi/en/instructions/logging-and-connections/using-cubbli-workstation-home-computer#using-cubbli-on-a-linux-home-computer
 
 Specically follow guidelines from `If you also need to copy files between your home ...` onwards.
 
-After configuring something like this:
+After configuration, do something like this (assuming you named the machines duuni1, duuni2, etc..)
 
     ssh -f -N -q pangtunnel 
     scp -r gameserver/*.* duuni1:
@@ -16,28 +16,25 @@ After configuring something like this:
 
 You should find folder /gameserver and /messagebroker
 
-Do the above for one machine. The two others wont a need messagebroker.
+Do the above for one machine. The two others wont a need messagebroker, but do need a gameserver.
 
-# Start a messagebroker
+# Starting a messagebroker
 
-0. Find out the ip of the server using `ip a`
 1. `cd messagebroker`
 2. `python3 main.py 3000` will start the messagebroker in the port 3000.
 
+# Starting a load balancer
+
+1. `cd loadbalancer`
+2. Store the ip-addresses of the machines gameservers will be deployed to `servers.txt` (one ip per line)
+2. `python3 main.py 7800` will start the loadbalancer in the port 7800.
+
 # Starting a gameserver
 
-0. store the ip-address of messagebroker to messagebroker.txt
+0. Store the ip-address of the machine messagebroker was deployed to `messagebroker.txt`
 1. `cd gameserver`
-2. `python3 -m venv .venv` (if not done already)
+2. Create a virtual environment `python3 -m venv .venv` (if not done already)
 3. `source .venv/bin/activate && pip install -r requirements.txt`
 4. Start the server with `source start.sh`
 
-        
 
-# Testing
-
-When you start the gameserver it will listen to power ups and events (by telling the messagebroker so).
-
-After you have a messagebroker and gameservers up, you can send a request to one of the gameservers and see what happens:
-
-    curl 123.123.123.123:7777/get-maze/1/1234

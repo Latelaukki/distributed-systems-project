@@ -1,5 +1,3 @@
 # Load-balancer
 
-Jakaa http-pyynnöt round-robin -hengessä pelipalvelimille. Kaikki pelaajat ottavat yhteyttä tähän.
-
-
+Distributes (HTTP-)requests to join the game to gameserves ni a round-robin -fashion. Initial contact point for players, furthers requests handled by the gameservers.
