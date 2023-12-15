@@ -1,4 +1,6 @@
-# distributed-systems-project
+# Distributed systems project
+
+Multiplayer Dungeon Crawler game
 
 The application consist of
 
@@ -11,13 +13,10 @@ These are further explained in the project final report.
 
 ## Frontend
 
-Frontend is built with Tkinter but can be changed to PyGame.
-
 Frontend can be started by running the main.py file in [src/](/src) folder:
 ```
 python3 main.py
 ```
-Responses are printed in the terminal.
 
 ## Deploying the project onto HY-machines
 
